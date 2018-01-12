@@ -18,9 +18,9 @@ InstallMethod( GSet,
             AsList, L,
             UnderlyingGroup, group );
     
-    Assert( 4, IsWellDefined( Omega ) );
-
     Add( SkeletalGSets( group ), Omega );
+
+    Assert( 4, IsWellDefined( Omega ) );
     
     return Omega;
     
@@ -67,10 +67,10 @@ InstallMethod( MapOfGSets,
         Range, T 
     );
     
+    Add( SkeletalGSets( group ), map );
+
     Assert( 4, IsWellDefined( map ) );
 
-    Add( SkeletalGSets( group ), map );
-     
     return map;
     
 end );
@@ -378,7 +378,7 @@ InstallMethod( SkeletalGSets,
         
         C := Cartesian( LoF );
         
-        #Action of G on C by rightmultiplication 
+        # Action of G on C by rightmultiplication 
         e := ExternalSet( group, C, OnRight );
         
         o := Orbits( e );
@@ -996,7 +996,7 @@ InstallMethod( SkeletalGSets,
                     j_b := img_b[ 3 ];
                     
                     Add( Equations, [ g_a, r_a, j_a, g_b, r_b, j_b ] ); 
-                od;  
+                od;
             od;
         od;
 
