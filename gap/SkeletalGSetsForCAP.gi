@@ -4,6 +4,16 @@
 # Implementations
 #
 
+DeclareRepresentation( "IsSkeletalGSetRep",
+        IsSkeletalGSet and
+        IsAttributeStoringRep,
+        [ ] );
+
+DeclareRepresentation( "IsSkeletalGSetMapRep",
+        IsSkeletalGSetMap and
+        IsAttributeStoringRep,
+        [ ] );
+
 ##
 InstallMethod( GSet,
         "for a nonnegative integer",
@@ -14,12 +24,10 @@ InstallMethod( GSet,
     
     Omega := rec( );
     
-    ObjectifyWithAttributes( Omega, TheTypeOfSkeletalGSets,
+    ObjectifyObjectForCAPWithAttributes( Omega, SkeletalGSets( group ),
             AsList, L,
             UnderlyingGroup, group );
     
-    Add( SkeletalGSets( group ), Omega );
-
     Assert( 4, IsWellDefined( Omega ) );
     
     return Omega;
@@ -61,13 +69,11 @@ InstallMethod( MapOfGSets,
     
     map := rec( );
     
-    ObjectifyWithAttributes( map, TheTypeOfMapsOfSkeletalGSets,
+    ObjectifyMorphismForCAPWithAttributes( map, SkeletalGSets( group ),
         AsList, imgs,
         Source, S,
         Range, T 
     );
-    
-    Add( SkeletalGSets( group ), map );
 
     Assert( 4, IsWellDefined( map ) );
 
@@ -105,6 +111,12 @@ InstallMethod( SkeletalGSets,
     SkeletalGSets := CreateCapCategory( CategoryName );
     
     SkeletalGSets!.group_for_category := group;
+    
+    AddObjectRepresentation( SkeletalGSets, IsSkeletalGSetRep );
+    
+    AddMorphismRepresentation( SkeletalGSets, IsSkeletalGSetMapRep );
+    
+    DisableAddForCategoricalOperations( SkeletalGSets );
     
     k := Length( MatTom( TableOfMarks( group ) ) );
     
