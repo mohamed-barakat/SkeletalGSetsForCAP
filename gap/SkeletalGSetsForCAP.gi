@@ -1341,7 +1341,7 @@ InstallMethod( SkeletalGSets,
                 g := imgs[ i ][ l ][ 2 ];
                 j := imgs[ i ][ l ][ 3 ];
                 
-                Add( C, [ Position( Set( L[ j ] ), r ), g, j ] );
+                Add( C, [ Position( L[ j ], r ), g, j ] );
             od;
             Add( D, C );
         od;
