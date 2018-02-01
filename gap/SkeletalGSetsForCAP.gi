@@ -856,7 +856,7 @@ InstallMethod( SkeletalGSets,
             for i in [ 1 .. k ] do
                 U := RepresentativeOfSubgroupsUpToConjugation( i );
                 for l in [ 1 .. M[ i ] ] do
-                    set := Union2( set, List( RightTransversal( group, U ), g -> [ l, g, i ] ) );
+                    set := Concatenation( set, List( RightTransversal( group, U ), g -> [ l, g, i ] ) );
                 od;
             od;
             return set;
@@ -1048,7 +1048,7 @@ InstallMethod( SkeletalGSets,
             r := p[ 1 ];
             U_j := RepresentativeOfSubgroupsUpToConjugation( j );
             h := Solutions[ j ][ r ];
-            v := Union2( v, GeneratorsOfGroup( ConjugateSubgroup( U_j, Inverse( h ) ) ) );
+            v := Concatenation( v, GeneratorsOfGroup( ConjugateSubgroup( U_j, Inverse( h ) ) ) );
         od;
         
         for e in Equations do
@@ -1149,7 +1149,7 @@ InstallMethod( SkeletalGSets,
                     imgs[ p[ 2 ] ][ p[ 1 ] ] := [ Cq[ pos ], Solutions[ p[ 2 ] ][ p[ 1 ] ] , pos ]; 
                 od;
                 
-                ProcessedImagePositions := Union2( ProcessedImagePositions, ImagePositions );
+                ProcessedImagePositions := Concatenation( ProcessedImagePositions, ImagePositions );
             od;
         od; 
         
@@ -1221,7 +1221,7 @@ InstallMethod( SkeletalGSets,
                 
                 Add( imgs[ pos ], [ img[ 1 ], img[ 2 ] * Inverse( g ), img [ 3 ] ] );
                 
-                ProcessedImagePositions := Union2( ProcessedImagePositions, ImagePositions );
+                ProcessedImagePositions := Concatenation( ProcessedImagePositions, ImagePositions );
             od;
         od;
         
