@@ -1346,6 +1346,54 @@ InstallMethod( SkeletalGSets,
         
     end );
 
+    ##
+    AddUniversalMorphismFromImageWithGivenImageObject( SkeletalGSets,
+      function( alpha, tau, I )
+        local iota, T, M, N, D, i, C, l, img, r, g, j, found_preimage, s, t, img2, r2, g2, j2;
+        
+        iota := ImageEmbeddingWithGivenImageObject( alpha, I );
+        
+        T := Source( tau[ 2 ] );
+        
+        M := AsList( I );
+        N := AsList( T );
+        
+        D := [];
+        
+        for i in [ 1 .. k ] do
+            C := [];
+            for l in [ 1 .. M[ i ] ] do
+                img := AsList( iota )[ i ][ l ];
+                r := img[ 1 ];
+                g := img[ 2 ];
+                j := img[ 3 ];
+                
+                # find the preimage of img
+                found_preimage := false;
+                for s in [ 1 .. k ] do
+                    for t in [ N[ s ] ] do
+                        img2 := AsList( tau[ 2 ] )[ s ][ t ];
+                        r2 := img2[ 1 ];
+                        g2 := img2[ 2 ];
+                        j2 := img2[ 3 ];
+                        if r = r2 and j = j2 then
+                            found_preimage := true;
+                            break;
+                        fi;
+                    od;
+                    if found_preimage then
+                        break;
+                    fi;
+                od;
+                
+                Add( C, [ t, Inverse( g2 ) * g, s ] );
+            od;
+            Add( D, C );
+        od;
+
+        return MapOfGSets( I, D, T );
+    end );
+
     Finalize( SkeletalGSets );
 
     ##
