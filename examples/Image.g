@@ -19,7 +19,7 @@ I := ImageObject( phi );
 iota := ImageEmbedding( phi );
 #! <A monomorphism in Skeletal Category of G-Sets>
 phi_res := CoastrictionToImage( phi );
-#! <An epimorphism in Skeletal Category of G-Sets>
+#! <A morphism in Skeletal Category of G-Sets>
 phi = PreCompose( phi_res, iota );
 #! true
 T := GSet( S3, [ 1, 1, 0, 0 ] );;
@@ -53,7 +53,7 @@ I := ImageObject( phi );
 psi := ImageEmbedding( phi );
 #! <A monomorphism in Skeletal Category of G-Sets>
 phi_res := CoastrictionToImage( phi );
-#! <An epimorphism in Skeletal Category of G-Sets>
+#! <A morphism in Skeletal Category of G-Sets>
 phi = PreCompose( phi_res, psi );
 #! true
 
@@ -77,7 +77,7 @@ pi := ImageEmbedding( phi );
 Display( pi );
 #! [ [ [ 5, (), 1 ], [ 7, (), 1 ] ] ]
 phi_res := CoastrictionToImage( phi );
-#! <An epimorphism in Skeletal Category of G-Sets>
+#! <A morphism in Skeletal Category of G-Sets>
 phi = PreCompose( phi_res, pi );
 #! true
 

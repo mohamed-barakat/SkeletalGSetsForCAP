@@ -314,6 +314,54 @@ InstallMethod( SkeletalGSets,
         return MapOfGSets( S, cmp, Range( map_post ) );
         
     end );
+    
+    ##
+    AddLiftAlongMonomorphism( SkeletalGSets,
+      function( iota, tau )
+        local S, T, M, N, D, i, C, l, img, r, g, j, found_preimage, s, t, img2, r2, g2, j2;
+      
+        S := Source( tau );
+        T := Source( iota );
+        
+        M := AsList( S );
+        N := AsList( T );
+        
+        D := [];
+        
+        for i in [ 1 .. k ] do
+            C := [];
+            for l in [ 1 .. M[ i ] ] do
+                img := AsList( tau )[ i ][ l ];
+                r := img[ 1 ];
+                g := img[ 2 ];
+                j := img[ 3 ];
+                
+                # find the preimage of img
+                found_preimage := false;
+                for s in [ 1 .. k ] do
+                    for t in [ 1 .. N[ s ] ] do
+                        img2 := AsList( iota )[ s ][ t ];
+                        r2 := img2[ 1 ];
+                        g2 := img2[ 2 ];
+                        j2 := img2[ 3 ];
+                        if r = r2 and j = j2 then
+                            found_preimage := true;
+                            break;
+                        fi;
+                    od;
+                    if found_preimage then
+                        break;
+                    fi;
+                od;
+                
+                Add( C, [ t, Inverse( g2 ) * g, s ] );
+            od;
+            Add( D, C );
+        od;
+
+        return MapOfGSets( S, D, T );
+        
+    end );
 
     ## Limits
 
@@ -713,44 +761,11 @@ InstallMethod( SkeletalGSets,
     ##
     AddUniversalMorphismIntoEqualizerWithGivenEqualizer( SkeletalGSets,
       function( D, tau, E )
-        local f1, M, L, i, l, S, N, imgs, img, r, g, j;
+        local iota;
         
-        f1 := D[ 1 ];
+        iota := EmbeddingOfEqualizerWithGivenEqualizer( D, E );
         
-        D := D{ [ 2 .. Length( D ) ] };
-        
-        M := AsList( Source( f1 ) );
-        
-        L := [];
-        
-        for i in [ 1 .. k ] do
-            L[i] := []; 
-            for l in [ 1 .. M[ i ] ] do
-                if ForAll( D, fj -> AsList( f1 )[ i ][ l ] = AsList( fj )[ i ][ l ] ) then
-                    Add( L[ i ], l );
-                fi;
-            od;
-        od;
-
-        
-        S := Source( tau );
-        N := AsList( S );
-        
-        imgs := [];
-        
-        for i in [ 1 .. k ] do
-            imgs[i] := []; 
-            for l in [ 1 .. N[ i ] ] do
-                img := AsList( tau )[ i ][ l ];
-                r := img[ 1 ];
-                g := img[ 2 ];
-                j := img[ 3 ];
-
-                Add( imgs[i], [ Position( L[ j ], r ), g, j ]  );
-            od;
-        od;
-
-        return MapOfGSets( S, imgs, E );
+        return LiftAlongMonomorphism( iota, tau );
         
     end );
 
@@ -1253,8 +1268,6 @@ InstallMethod( SkeletalGSets,
                 Add( L[j], r );
             od;
         od;
-        
-        L := List( L, l -> Set( l ) );
 
         return L;
         
@@ -1264,7 +1277,7 @@ InstallMethod( SkeletalGSets,
     AddImageObject( SkeletalGSets,
       function( phi )
         
-        return GSet( group, List( ImagePositions( phi ), x -> Length( x ) ) );
+        return GSet( group, List( ImagePositions( phi ), x -> Length( Set( x ) ) ) );
         
     end );
 
@@ -1293,7 +1306,7 @@ InstallMethod( SkeletalGSets,
         
         M := AsList( I );
         
-        L := ImagePositions( phi );
+        L := List( ImagePositions( phi ), x -> Set( x ) );
         
         D := [];
         
@@ -1307,91 +1320,6 @@ InstallMethod( SkeletalGSets,
 
         return MapOfGSets( I, D, Range( phi ) );
         
-    end );
-
-    ##
-    AddCoastrictionToImage( SkeletalGSets,
-      function( phi )
-        local M, I, imgs, L, i, l, r, j, D, C, g, pi;
-        
-        M := AsList( Source( phi ) );
-        
-        I := ImageObject( phi );
-        
-        imgs := AsList( phi );
-        
-        L := ImagePositions( phi );
-        
-        D := [];
-        
-        for i in [ 1 .. k ] do 
-            C := [];
-            for l in [ 1 .. M[ i ] ] do
-                r := imgs[ i ][ l ][ 1 ];
-                g := imgs[ i ][ l ][ 2 ];
-                j := imgs[ i ][ l ][ 3 ];
-                
-                Add( C, [ Position( L[ j ], r ), g, j ] );
-            od;
-            Add( D, C );
-        od;
-        
-        pi := MapOfGSets( Source( phi ), D, I );
-        
-        Assert( 4, IsEpimorphism( pi ) );
-        
-        SetIsEpimorphism( pi, true );
-        
-        return pi;
-        
-    end );
-
-    ##
-    AddUniversalMorphismFromImageWithGivenImageObject( SkeletalGSets,
-      function( alpha, tau, I )
-        local iota, T, M, N, D, i, C, l, img, r, g, j, found_preimage, s, t, img2, r2, g2, j2;
-        
-        iota := ImageEmbeddingWithGivenImageObject( alpha, I );
-        
-        T := Source( tau[ 2 ] );
-        
-        M := AsList( I );
-        N := AsList( T );
-        
-        D := [];
-        
-        for i in [ 1 .. k ] do
-            C := [];
-            for l in [ 1 .. M[ i ] ] do
-                img := AsList( iota )[ i ][ l ];
-                r := img[ 1 ];
-                g := img[ 2 ];
-                j := img[ 3 ];
-                
-                # find the preimage of img
-                found_preimage := false;
-                for s in [ 1 .. k ] do
-                    for t in [ N[ s ] ] do
-                        img2 := AsList( tau[ 2 ] )[ s ][ t ];
-                        r2 := img2[ 1 ];
-                        g2 := img2[ 2 ];
-                        j2 := img2[ 3 ];
-                        if r = r2 and j = j2 then
-                            found_preimage := true;
-                            break;
-                        fi;
-                    od;
-                    if found_preimage then
-                        break;
-                    fi;
-                od;
-                
-                Add( C, [ t, Inverse( g2 ) * g, s ] );
-            od;
-            Add( D, C );
-        od;
-
-        return MapOfGSets( I, D, T );
     end );
 
     Finalize( SkeletalGSets );
