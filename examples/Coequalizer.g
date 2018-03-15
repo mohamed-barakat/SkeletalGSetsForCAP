@@ -126,7 +126,7 @@ C := Coequalizer( D );
 #! <An object in Skeletal Category of G-Sets>
 AsList( C );
 #! [ 3 ]
-pi := ProjectionOntoCoequalizer(D);
+pi := ProjectionOntoCoequalizer( D );
 #! <A morphism in Skeletal Category of G-Sets>
 Display( pi );
 #! [ [ [ 1, (), 1 ], [ 2, (), 1 ], [ 3, (), 1 ], [ 3, (), 1 ] ] ]

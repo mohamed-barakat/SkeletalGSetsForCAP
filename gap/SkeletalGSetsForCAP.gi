@@ -101,7 +101,9 @@ InstallMethod( SkeletalGSets,
         UniversalMorphismIntoBinaryDirectProductWithGivenDirectProduct,
         ExplicitCoequalizer,
         CoequalizerOfAConnectedComponent,
-        ImagePositions;
+        ImagePositions,
+        PreimagePositions,
+        EmbeddingOfPositions;
     
     if HasName( group ) then
         CategoryName := Concatenation( "Skeletal Category of ", Name( group ), "-Sets" );
@@ -314,11 +316,88 @@ InstallMethod( SkeletalGSets,
         return MapOfGSets( S, cmp, Range( map_post ) );
         
     end );
+
+    ##
+    ImagePositions := function( phi )
+        local S, M, imgs, L, i, l, r, j;
+        
+        S := Source( phi );
+        
+        M := AsList( S );
+        
+        imgs := AsList( phi );
+        
+        L := [];
+        
+        for i in [ 1 .. k ] do
+            for l in [ 1 .. M[ i ] ] do
+                r := imgs[ i ][ l ][ 1 ];
+                j := imgs[ i ][ l ][ 3 ];
+                
+                Add( L, [ j, r ] );
+            od;
+        od;
+
+        return Set( L );
+        
+    end;
+
+    ##
+    PreimagePositions := function( phi, pos )
+        local S, M, imgs, j, r, L, i, l;
+        
+        S := Source( phi );
+        
+        M := AsList( S );
+        
+        imgs := AsList( phi );
+        
+        j := pos[ 1 ];
+        r := pos[ 2 ];
+        
+        L := [];
+        
+        for i in [ 1 .. k ] do
+            for l in [ 1 .. M[ i ] ] do
+                if imgs[ i ][ l ][ 1 ] = r and imgs[ i ][ l ][ 3 ] = j then
+                    Add( L, [ i, l ] );
+                fi;
+            od; 
+        od;
+        
+        return Set( L );
+        
+    end;
+    
+    ##
+    EmbeddingOfPositions := function( positions, T )
+        local positionsBySubgroupPosition, S, M, D, i, C, l;
+        
+        # group positions by subgroup, i.e. first entry
+        positionsBySubgroupPosition := List( [ 1 .. k ], i -> Filtered( positions, p -> p[ 1 ] = i ) );
+        
+        S := GSet( group, List( positionsBySubgroupPosition, p -> Length( p ) ) );
+        
+        M := AsList( S );
+        
+        D := [];
+        
+        for i in [ 1 .. k ] do 
+            C := [];
+            for l in [ 1 .. M[ i ] ] do
+                Add( C, [ positionsBySubgroupPosition[ i ][ l ][ 2 ], Identity( group ), i ] );
+            od;
+            Add( D, C );
+        od;
+
+        return MapOfGSets( S, D, T );
+        
+    end;
     
     ##
     AddLiftAlongMonomorphism( SkeletalGSets,
       function( iota, tau )
-        local S, T, M, N, D, i, C, l, img, r, g, j, found_preimage, s, t, img2, r2, g2, j2;
+        local S, T, M, N, D, i, C, l, img, r, g, j, foundPreimage, s, t, img_2, r_2, g_2, j_2;
       
         S := Source( tau );
         T := Source( iota );
@@ -337,24 +416,24 @@ InstallMethod( SkeletalGSets,
                 j := img[ 3 ];
                 
                 # find the preimage of img
-                found_preimage := false;
+                foundPreimage := false;
                 for s in [ 1 .. k ] do
                     for t in [ 1 .. N[ s ] ] do
-                        img2 := AsList( iota )[ s ][ t ];
-                        r2 := img2[ 1 ];
-                        g2 := img2[ 2 ];
-                        j2 := img2[ 3 ];
-                        if r = r2 and j = j2 then
-                            found_preimage := true;
+                        img_2 := AsList( iota )[ s ][ t ];
+                        r_2 := img_2[ 1 ];
+                        g_2 := img_2[ 2 ];
+                        j_2 := img_2[ 3 ];
+                        if r = r_2 and j = j_2 then
+                            foundPreimage := true;
                             break;
                         fi;
                     od;
-                    if found_preimage then
+                    if foundPreimage then
                         break;
                     fi;
                 od;
                 
-                Add( C, [ t, Inverse( g2 ) * g, s ] );
+                Add( C, [ t, Inverse( g_2 ) * g, s ] );
             od;
             Add( D, C );
         od;
@@ -991,8 +1070,8 @@ InstallMethod( SkeletalGSets,
     end;
 
     ##
-    CoequalizerOfAConnectedComponent := function( D, SourcePositions, RangePositions )
-      local A, B, M, N, Equations, Solutions, a, b, s, i, l, f_a, f_b, img_a, img_b, r_a, r_b, g_a, g_b, j_a, j_b, p, r, j, h, e, v, U_j, h_a, h_b, V, U_i, g;
+    CoequalizerOfAConnectedComponent := function( D, sourcePositions, rangePositions )
+      local A, B, M, N, equations, solutions, a, b, s, i, l, f_a, f_b, img_a, img_b, r_a, r_b, g_a, g_b, j_a, j_b, p, r, j, h, e, v, U_j, h_a, h_b, V, U_i, g;
         
         A := Source( D[ 1 ] );
         B := Range( D[ 1 ] );
@@ -1000,87 +1079,84 @@ InstallMethod( SkeletalGSets,
         M := AsList( A );
         N := AsList( B );
         
-        Equations := [];
+        equations := [];
         
-        Solutions := List( [ 1 .. k ], j -> ListWithIdenticalEntries( N[ j ], false ) );
+        solutions := List( [ 1 .. k ], j -> ListWithIdenticalEntries( N[ j ], false ) );
         
         for a in [ 1 .. Length( D ) ] do
-            for b in [ (a + 1) .. Length( D ) ] do
-                for s in SourcePositions do
-                    i := s[ 2 ];
-                    l := s[ 1 ];
+            for b in [ ( a + 1 ) .. Length( D ) ] do
+                for s in sourcePositions do
+                    i := s[ 1 ];
+                    l := s[ 2 ];
+                    
+                    e := rec();
+                    
                     f_a := D[ a ];  
                     f_b := D[ b ];
                     img_a := AsList( f_a )[ i ][ l ];  
                     img_b := AsList( f_b )[ i ][ l ];
-                    r_a := img_a[ 1 ];
-                    r_b := img_b[ 1 ];
-                    g_a := Representative( img_a[ 2 ] );
-                    g_b := Representative( img_b[ 2 ] );
-                    j_a := img_a[ 3 ];
-                    j_b := img_b[ 3 ];
+                    e.("r_a") := img_a[ 1 ];
+                    e.("r_b") := img_b[ 1 ];
+                    e.("g_a") := Representative( img_a[ 2 ] );
+                    e.("g_b") := Representative( img_b[ 2 ] );
+                    e.("j_a") := img_a[ 3 ];
+                    e.("j_b") := img_b[ 3 ];
                     
-                    Add( Equations, [ g_a, r_a, j_a, g_b, r_b, j_b ] ); 
+                    Add( equations, e ); 
                 od;
             od;
         od;
 
-        Solutions[ RangePositions[ 1 ][ 2 ] ] [ RangePositions[ 1 ][ 1 ] ] := Identity( group );
+        solutions[ rangePositions[ 1 ][ 1 ] ] [ rangePositions[ 1 ][ 2 ] ] := Identity( group );
         
         repeat 
             # search for new solutions
-            for p in RangePositions do
-                r := p[ 1 ];
-                j := p[ 2 ];
-                for e in Equations do
-                    r_a := e[ 2 ];
-                    r_b := e[ 5 ];
-                    g_a := e[ 1 ];
-                    g_b := e[ 4 ];
-                    j_a := e[ 3 ];
-                    j_b := e[ 6 ];
+            for p in rangePositions do
+                j := p[ 1 ];
+                r := p[ 2 ];
+                for e in equations do
+                    r_a := e.r_a;
+                    r_b := e.r_b;
+                    g_a := e.g_a;
+                    g_b := e.g_b;
+                    j_a := e.j_a;
+                    j_b := e.j_b;
                     
                     if [ r_a, j_a ] = [ r, j ] then
-                        if Solutions[ j ][ r ] = false and Solutions[ j_b ][ r_b ] <> false then
-                            Solutions[ j ][ r ] := Solutions[ j_b ][ r_b ] * g_b * Inverse( g_a );
+                        if solutions[ j ][ r ] = false and solutions[ j_b ][ r_b ] <> false then
+                            solutions[ j ][ r ] := solutions[ j_b ][ r_b ] * g_b * Inverse( g_a );
                         fi;
-                        if Solutions[ j ][ r ] <> false and Solutions[ j_b ][ r_b ] = false then
-                            Solutions[ j_b ][ r_b ] := Solutions[ j ][ r ] * g_a * Inverse( g_b );
+                        if solutions[ j ][ r ] <> false and solutions[ j_b ][ r_b ] = false then
+                            solutions[ j_b ][ r_b ] := solutions[ j ][ r ] * g_a * Inverse( g_b );
                         fi;
                     
                     elif [ r_b, j_b ] = [ r, j ] then
-                        if Solutions[ j ][ r ] = false and Solutions[ j_a ][ r_a ] <> false then
-                            Solutions[ j ][ r ] := Solutions[ j_a ][ r_a ] * g_a * Inverse( g_b );
+                        if solutions[ j ][ r ] = false and solutions[ j_a ][ r_a ] <> false then
+                            solutions[ j ][ r ] := solutions[ j_a ][ r_a ] * g_a * Inverse( g_b );
                         fi;
-                        if Solutions[ j ][ r ] <> false and Solutions[ j_a ][ r_a ] = false then
-                            Solutions[ j_a ][ r_a ] := Solutions[ j ][ r ] * g_b * Inverse( g_a );
+                        if solutions[ j ][ r ] <> false and solutions[ j_a ][ r_a ] = false then
+                            solutions[ j_a ][ r_a ] := solutions[ j ][ r ] * g_b * Inverse( g_a );
                         fi;  
                     fi;
                 od;
             od;
             
-        until ForAll( RangePositions, p -> Solutions[ p[ 2 ] ][ p[ 1 ]] <> false );
+        until ForAll( rangePositions, p -> solutions[ p[ 1 ] ][ p[ 2 ]] <> false );
         
         v := [];
         
-        for p in RangePositions do
-            j := p[ 2 ];
-            r := p[ 1 ];
+        for p in rangePositions do
+            j := p[ 1 ];
+            r := p[ 2 ];
             U_j := RepresentativeOfSubgroupsUpToConjugation( j );
-            h := Solutions[ j ][ r ];
+            h := solutions[ j ][ r ];
             v := Concatenation( v, GeneratorsOfGroup( ConjugateSubgroup( U_j, Inverse( h ) ) ) );
         od;
         
-        for e in Equations do
-            r_a := e[ 2 ];
-            r_b := e[ 5 ];
-            g_a := e[ 1 ];
-            g_b := e[ 4 ];
-            j_a := e[ 3 ];
-            j_b := e[ 6 ];
-            h_a := Solutions[ j_a ][ r_a ];
-            h_b := Solutions[ j_b ][ r_b ];
-            Add( v , h_b * g_b * Inverse( g_a ) * Inverse( h_a ) );
+        for e in equations do
+            h_a := solutions[ e.j_a ][ e.r_a ];
+            h_b := solutions[ e.j_b ][ e.r_b ];
+            Add( v , h_b * e.g_b * Inverse( e.g_a ) * Inverse( h_a ) );
         od;
 
         V := Subgroup( group, v );
@@ -1089,12 +1165,12 @@ InstallMethod( SkeletalGSets,
             U_i := RepresentativeOfSubgroupsUpToConjugation( i );
             for g in group do
                 if ConjugateSubgroup( V, Inverse( g ) ) = U_i then
-                    for p in RangePositions do
-                        r := p[ 1 ];
-                        j := p[ 2 ];
-                        Solutions[ j ][ r ] := g * Solutions[ j ][ r ]; 
+                    for p in rangePositions do
+                        j := p[ 1 ];
+                        r := p[ 2 ];
+                        solutions[ j ][ r ] := g * solutions[ j ][ r ]; 
                     od;
-                    return [ i, Solutions, g ];
+                    return [ i, solutions, g ];
                 fi;
             od;
         od;
@@ -1112,7 +1188,7 @@ InstallMethod( SkeletalGSets,
     ##
     AddProjectionOntoCoequalizer( SkeletalGSets,
       function( D )
-        local A, B, M, N, Cq, ProcessedImagePositions, imgs, j, r, PreimagePositions, f, i, l, ImagePositions, p, img, temp, pos, Solutions;
+        local A, B, M, N, Cq, processedImagePositions, imgs, j, r, preimagePositions, imagePositions, iota, temp, subgroupPosition, solutions, p;
         
         A := Source( D[ 1 ] );
         B := Range( D[ 1 ] );
@@ -1122,54 +1198,37 @@ InstallMethod( SkeletalGSets,
         
         Cq := IntZeroVector( k );
         
-        ProcessedImagePositions := [];
+        processedImagePositions := [];
         
         imgs := List( [ 1 .. k ], x -> [] );
         
         for j in [ 1 .. k ] do
             for r in [ 1 .. N[ j ] ] do 
-                if [ r, j ] in ProcessedImagePositions then
+                if [ j, r ] in processedImagePositions then
                     continue;
                 fi;
                 
-                PreimagePositions := [];
+                preimagePositions := Union( List( D, phi -> PreimagePositions( phi, [ j, r ] ) ) );
                 
-                for f in D do
-                    for i in [ 1 .. k ] do
-                        for l in [ 1 .. M[ i ] ] do
-                            if AsList( f )[ i ][ l ][ 1 ] = r and AsList( f )[ i ][ l ][ 3 ] = j then
-                                Add( PreimagePositions, [ l, i ] );
-                            fi;
-                        od; 
-                    od;
+                if IsEmpty( preimagePositions ) then
+                    imagePositions := [ [ j, r ] ];
+                else
+                    iota := EmbeddingOfPositions( preimagePositions, A );
+                    imagePositions := Union( List( D, phi -> ImagePositions( PreCompose( iota, phi ) ) ) );
+                fi;
                 
+                temp := CoequalizerOfAConnectedComponent( D, preimagePositions, imagePositions );
+                
+                subgroupPosition := temp[ 1 ];
+                solutions := temp[ 2 ];
+                
+                Cq[ subgroupPosition ] := Cq[ subgroupPosition ] + 1;
+                
+                for p in imagePositions do
+                    imgs[ p[ 1 ] ][ p[ 2 ] ] := [ Cq[ subgroupPosition ], solutions[ p[ 1 ] ][ p[ 2 ] ] , subgroupPosition ]; 
                 od;
                 
-                PreimagePositions := Set( PreimagePositions );
-                
-                ImagePositions := [ [ r, j ] ];
-                
-                for p in PreimagePositions do
-                    for f in D do
-                        img := AsList( f )[ p[ 2 ] ][ p[ 1 ] ];
-                        Add( ImagePositions, [ img[ 1 ], img[ 3 ] ] );
-                    od;
-                od;
-                
-                ImagePositions := Set( ImagePositions );
-                
-                temp := CoequalizerOfAConnectedComponent( D, PreimagePositions, ImagePositions );
-                
-                pos := temp[ 1 ];
-                Solutions := temp[ 2 ];
-                
-                Cq[ pos ] := Cq[ pos ] + 1;
-                
-                for p in ImagePositions do
-                    imgs[ p[ 2 ] ][ p[ 1 ] ] := [ Cq[ pos ], Solutions[ p[ 2 ] ][ p[ 1 ] ] , pos ]; 
-                od;
-                
-                ProcessedImagePositions := Concatenation( ProcessedImagePositions, ImagePositions );
+                processedImagePositions := Concatenation( processedImagePositions, imagePositions );
             od;
         od; 
         
@@ -1180,7 +1239,7 @@ InstallMethod( SkeletalGSets,
     ##
     AddUniversalMorphismFromCoequalizer( SkeletalGSets,
       function( D, tau )
-        local T, A, B, M, N, Cq, ProcessedImagePositions, imgs, j, r, PreimagePositions, f, i, l, ImagePositions, p, img, temp, pos, Solutions, first_image_position, g;
+        local T, A, B, M, N, Cq, processedImagePositions, imgs, j, r, preimagePositions, imagePositions, iota, temp, subgroupPosition, solutions, g, firstImagePosition, img;
         
         T := Range( tau );
         
@@ -1192,56 +1251,39 @@ InstallMethod( SkeletalGSets,
         
         Cq := IntZeroVector( k );
         
-        ProcessedImagePositions := [];
+        processedImagePositions := [];
         
         imgs := List( [ 1 .. k ], x -> [] );
         
         for j in [ 1 .. k ] do
             for r in [ 1 .. N[ j ] ] do 
-                if [ r, j ] in ProcessedImagePositions then
+                if [ j, r ] in processedImagePositions then
                     continue;
                 fi;
                 
-                PreimagePositions := [];
+                preimagePositions := Union( List( D, phi -> PreimagePositions( phi, [ j, r ] ) ) );
                 
-                for f in D do  
-                    for i in [ 1 .. k ] do
-                        for l in [ 1 .. M[ i ] ] do
-                            if AsList( f )[ i ][ l ][ 1 ] = r and AsList( f )[ i ][ l ][ 3 ] = j then
-                                Add( PreimagePositions, [ l, i ] );
-                            fi;
-                        od; 
-                    od;
+                if IsEmpty( preimagePositions ) then
+                    imagePositions := [ [ j, r ] ];
+                else
+                    iota := EmbeddingOfPositions( preimagePositions, A );
+                    imagePositions := Union( List( D, phi -> ImagePositions( PreCompose( iota, phi ) ) ) );
+                fi;
                 
-                od;
+                temp := CoequalizerOfAConnectedComponent( D, preimagePositions, imagePositions );
                 
-                PreimagePositions := Set( PreimagePositions );
-                
-                ImagePositions := [ [ r, j ] ];
-                
-                for p in PreimagePositions do
-                    for f in D do
-                        img := AsList( f )[ p[ 2 ] ][ p[ 1 ] ];
-                        Add( ImagePositions, [ img[ 1 ], img[ 3 ] ] );
-                    od;
-                od;
-                
-                ImagePositions := Set( ImagePositions );
-                
-                temp := CoequalizerOfAConnectedComponent( D, PreimagePositions, ImagePositions );
-                
-                pos := temp[ 1 ];
-                Solutions := temp[ 2 ];
+                subgroupPosition := temp[ 1 ];
+                solutions := temp[ 2 ];
                 g := temp[ 3 ];
                 
-                Cq[ pos ] := Cq[ pos ] + 1;
+                Cq[ subgroupPosition ] := Cq[ subgroupPosition ] + 1;
                 
-                first_image_position := ImagePositions[ 1 ];
-                img := AsList(tau)[ first_image_position[ 2 ] ][ first_image_position[ 1 ] ];
+                firstImagePosition := imagePositions[ 1 ];
+                img := AsList( tau )[ firstImagePosition[ 1 ] ][ firstImagePosition[ 2 ] ];
                 
-                Add( imgs[ pos ], [ img[ 1 ], img[ 2 ] * Inverse( g ), img [ 3 ] ] );
+                Add( imgs[ subgroupPosition ], [ img[ 1 ], img[ 2 ] * Inverse( g ), img [ 3 ] ] );
                 
-                ProcessedImagePositions := Concatenation( ProcessedImagePositions, ImagePositions );
+                processedImagePositions := Concatenation( processedImagePositions, imagePositions );
             od;
         od;
         
@@ -1249,36 +1291,10 @@ InstallMethod( SkeletalGSets,
         
     end );
     
-    ImagePositions := function( phi )
-        local S, M, imgs, L, i, l, r, j;
-        
-        S := Source( phi );
-        
-        M := AsList( S );
-        
-        imgs := AsList(phi);
-        
-        L := List( [ 1 .. k ], i -> [] );
-        
-        for i in [ 1 .. k ] do
-            for l in [ 1 .. M[ i ] ] do
-                r := imgs[ i ][ l ][ 1 ];
-                j := imgs[ i ][ l ][ 3 ];
-                
-                Add( L[j], r );
-            od;
-        od;
-
-        return L;
-        
-    end;
-    
     ##
-    AddImageObject( SkeletalGSets,
+    AddImageEmbedding( SkeletalGSets,
       function( phi )
-        
-        return GSet( group, List( ImagePositions( phi ), x -> Length( Set( x ) ) ) );
-        
+        return EmbeddingOfPositions( ImagePositions( phi ), Range( phi ) );
     end );
 
     ##
@@ -1294,31 +1310,6 @@ InstallMethod( SkeletalGSets,
       function( phi )
         
         return AsList( ImageObject( phi ) ) = AsList( Source( phi ) );
-        
-    end );
-
-    ##
-    AddImageEmbedding( SkeletalGSets,
-      function( phi )
-        local I, M, L, i, l, D, C;
-        
-        I := ImageObject( phi );
-        
-        M := AsList( I );
-        
-        L := List( ImagePositions( phi ), x -> Set( x ) );
-        
-        D := [];
-        
-        for i in [ 1 .. k ] do 
-            C := [];
-            for l in [ 1 .. M[ i ] ] do
-                Add( C, [ L[ i ][ l ], Identity( group ), i ] );
-            od;
-            Add( D, C );
-        od;
-
-        return MapOfGSets( I, D, Range( phi ) );
         
     end );
 
