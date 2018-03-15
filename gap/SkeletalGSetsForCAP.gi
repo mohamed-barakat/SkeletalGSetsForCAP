@@ -101,6 +101,9 @@ InstallMethod( SkeletalGSets,
         UniversalMorphismIntoBinaryDirectProductWithGivenDirectProduct,
         ExplicitCoequalizer,
         CoequalizerOfAConnectedComponent,
+        Positions,
+        Component,
+        TargetPosition,
         ImagePositions,
         PreimagePositions,
         EmbeddingOfPositions;
@@ -184,6 +187,22 @@ InstallMethod( SkeletalGSets,
         return AsList( Omega1 ) = AsList( Omega2 );
         
     end );
+
+    Positions := function( Omega )
+        local M, positions, i, l;
+        
+        M := AsList( Omega );
+        
+        positions := [];
+        
+        for i in [ 1 .. k ] do
+            for l in [ 1 .. M[ i ] ] do
+                Add( positions, [ i, l ] );
+            od;
+        od;
+        
+        return positions;
+    end;
 
 
     ## Morphisms
@@ -298,12 +317,12 @@ InstallMethod( SkeletalGSets,
         for i in [ 1 .. k ] do 
             C := [];
             for l in [ 1 .. M[ i ] ] do
-                img_1 := AsList( map_pre )[ i ] [ l ];
+                img_1 := Component( map_pre, [ i, l ] );
                 r_1 := img_1[ 1 ];
                 g_1 := img_1[ 2 ];
                 j_1 := img_1[ 3 ];
         
-                img_2 := AsList( map_post )[ j_1 ][ r_1 ];
+                img_2 := Component( map_post, [ j_1 , r_1 ] );
                 r_2 := img_2[ 1 ];
                 g_2 := img_2[ 2 ];
                 j_2 := img_2[ 3 ];
@@ -316,56 +335,37 @@ InstallMethod( SkeletalGSets,
         return MapOfGSets( S, cmp, Range( map_post ) );
         
     end );
+    
+    Component := function( phi, position )
+        return AsList( phi )[ position[ 1 ] ][ position[ 2 ] ];
+    end;
+    
+    TargetPosition := function( component )
+        return [ component[ 3 ], component[ 1 ] ];
+    end;
 
     ##
     ImagePositions := function( phi )
-        local S, M, imgs, L, i, l, r, j;
+        local S, T, positions;
         
         S := Source( phi );
+        T := Range( phi );
         
-        M := AsList( S );
-        
-        imgs := AsList( phi );
-        
-        L := [];
-        
-        for i in [ 1 .. k ] do
-            for l in [ 1 .. M[ i ] ] do
-                r := imgs[ i ][ l ][ 1 ];
-                j := imgs[ i ][ l ][ 3 ];
-                
-                Add( L, [ j, r ] );
-            od;
-        od;
+        positions := Filtered( Positions( T ), p_T -> ForAny( Positions( S ), p_S -> TargetPosition( Component( phi, p_S ) ) = p_T ) );
 
-        return Set( L );
+        return positions;
         
     end;
 
     ##
-    PreimagePositions := function( phi, pos )
-        local S, M, imgs, j, r, L, i, l;
+    PreimagePositions := function( phi, targetPosition )
+        local S, positions;
         
         S := Source( phi );
         
-        M := AsList( S );
+        positions := Filtered( Positions( S ), p -> TargetPosition( Component( phi, p ) ) = targetPosition );
         
-        imgs := AsList( phi );
-        
-        j := pos[ 1 ];
-        r := pos[ 2 ];
-        
-        L := [];
-        
-        for i in [ 1 .. k ] do
-            for l in [ 1 .. M[ i ] ] do
-                if imgs[ i ][ l ][ 1 ] = r and imgs[ i ][ l ][ 3 ] = j then
-                    Add( L, [ i, l ] );
-                fi;
-            od; 
-        od;
-        
-        return Set( L );
+        return positions;
         
     end;
     
@@ -397,7 +397,7 @@ InstallMethod( SkeletalGSets,
     ##
     AddLiftAlongMonomorphism( SkeletalGSets,
       function( iota, tau )
-        local S, T, M, N, D, i, C, l, img, r, g, j, foundPreimage, s, t, img_2, r_2, g_2, j_2;
+        local S, T, M, N, D, i, C, l, img, r, g, j, preimagePosition, t, h, s;
       
         S := Source( tau );
         T := Source( iota );
@@ -410,30 +410,18 @@ InstallMethod( SkeletalGSets,
         for i in [ 1 .. k ] do
             C := [];
             for l in [ 1 .. M[ i ] ] do
-                img := AsList( tau )[ i ][ l ];
+                img := Component( tau, [ i , l ] );
                 r := img[ 1 ];
                 g := img[ 2 ];
                 j := img[ 3 ];
                 
-                # find the preimage of img
-                foundPreimage := false;
-                for s in [ 1 .. k ] do
-                    for t in [ 1 .. N[ s ] ] do
-                        img_2 := AsList( iota )[ s ][ t ];
-                        r_2 := img_2[ 1 ];
-                        g_2 := img_2[ 2 ];
-                        j_2 := img_2[ 3 ];
-                        if r = r_2 and j = j_2 then
-                            foundPreimage := true;
-                            break;
-                        fi;
-                    od;
-                    if foundPreimage then
-                        break;
-                    fi;
-                od;
+                preimagePosition := PreimagePositions( iota, [ j, r ] )[1];
                 
-                Add( C, [ t, Inverse( g_2 ) * g, s ] );
+                t := preimagePosition[ 2 ];
+                h := Component( iota, preimagePosition )[ 2 ];
+                s := preimagePosition[ 1 ];
+                
+                Add( C, [ t, Inverse( h ) * g, s ] );
             od;
             Add( D, C );
         od;
@@ -784,56 +772,23 @@ InstallMethod( SkeletalGSets,
     ##
     AddEqualizer(SkeletalGSets,
       function( D )
-        local f1, s, M, L, i, l;
-        
-        f1 := D[ 1 ];
-        
-        s := Source( f1 );
-        
-        D := D{ [ 2 .. Length( D ) ] };
-        
-        M := AsList( s );
-        
-        L := [];
-        
-        for i in [ 1 .. k ] do
-            L[i] := 0; 
-            for l in [ 1 .. M[ i ] ] do
-                if ForAll( D, fj -> AsList( f1 )[ i ][ l ] = AsList( fj )[ i ][ l ] ) then
-                    L[i] := L[i] + 1;
-                fi;
-            od;
-        od;
-        
-        return GSet( group, L );
-        
+        return Source( EmbeddingOfEqualizer( D ) );
     end);
 
     ##
-    AddEmbeddingOfEqualizerWithGivenEqualizer( SkeletalGSets,
-      function( D, E )
-        local f1, S, M, L, i, l;
+    AddEmbeddingOfEqualizer( SkeletalGSets,
+      function( D )
+        local phi_1, S, positions;
         
-        f1 := D[ 1 ];
+        phi_1 := D[ 1 ];
         
-        S := Source( f1 );
+        S := Source( phi_1 );
         
         D := D{ [ 2 .. Length( D ) ] };
         
-        M := AsList( S );
+        positions := Filtered( Positions( S ), p -> ForAll( D, phi -> Component( phi_1, p ) = Component( phi, p ) ) );
         
-        L := [];
-        
-        for i in [ 1 .. k ] do
-            L[i] := []; 
-            for l in [ 1 .. M[ i ] ] do
-                if ForAll( D, fj -> AsList( f1 )[ i ][ l ] = AsList( fj )[ i ][ l ] ) then
-                    Add( L[i], [ l, Identity( group ), i ] );
-                fi;
-            od;
-        od;
-        
-        return MapOfGSets( E, L, S );
+        return EmbeddingOfPositions( positions, S );
         
     end );
 
