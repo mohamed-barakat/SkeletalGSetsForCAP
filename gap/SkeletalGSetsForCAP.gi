@@ -327,7 +327,7 @@ InstallMethod( SkeletalGSets,
                 g_2 := img_2[ 2 ];
                 j_2 := img_2[ 3 ];
         
-                Add( C, [ r_2, Representative( g_2 ) * Representative( g_1), j_2 ] );
+                Add( C, [ r_2, Representative( g_2 ) * Representative( g_1 ), j_2 ] );
             od;
             Add( cmp, C );
         od;
@@ -373,7 +373,7 @@ InstallMethod( SkeletalGSets,
     EmbeddingOfPositions := function( positions, T )
         local positionsBySubgroupPosition, S, M, D, i, C, l;
         
-        # group positions by subgroup, i.e. first entry
+        # group positions by subgroup position, i.e. first entry
         positionsBySubgroupPosition := List( [ 1 .. k ], i -> Filtered( positions, p -> p[ 1 ] = i ) );
         
         S := GSet( group, List( positionsBySubgroupPosition, p -> Length( p ) ) );
@@ -394,16 +394,17 @@ InstallMethod( SkeletalGSets,
         
     end;
     
+    # TODO D,C, L -> components 
+    
     ##
     AddLiftAlongMonomorphism( SkeletalGSets,
       function( iota, tau )
-        local S, T, M, N, D, i, C, l, img, r, g, j, preimagePosition, t, h, s;
+        local S, T, M, D, i, C, l, img, r, g, j, preimagePosition, t, h, s;
       
         S := Source( tau );
         T := Source( iota );
         
         M := AsList( S );
-        N := AsList( T );
         
         D := [];
         
@@ -412,16 +413,51 @@ InstallMethod( SkeletalGSets,
             for l in [ 1 .. M[ i ] ] do
                 img := Component( tau, [ i , l ] );
                 r := img[ 1 ];
-                g := img[ 2 ];
+                g := Representative( img[ 2 ] );
                 j := img[ 3 ];
                 
-                preimagePosition := PreimagePositions( iota, [ j, r ] )[1];
+                # get the unique preimage position under iota
+                preimagePosition := PreimagePositions( iota, [ j, r ] )[ 1 ];
                 
                 t := preimagePosition[ 2 ];
-                h := Component( iota, preimagePosition )[ 2 ];
+                h := Representative( Component( iota, preimagePosition )[ 2 ] );
                 s := preimagePosition[ 1 ];
                 
                 Add( C, [ t, Inverse( h ) * g, s ] );
+            od;
+            Add( D, C );
+        od;
+
+        return MapOfGSets( S, D, T );
+        
+    end );
+    
+    ##
+    AddColiftAlongEpimorphism( SkeletalGSets,
+      function( epsilon, tau )
+        local S, T, M, D, i, C, l, img, r, g, j, preimagePosition, t, h, s;
+      
+        S := Range( epsilon );
+        T := Range( tau );
+        
+        M := AsList( S );
+        
+        D := [];
+        
+        for i in [ 1 .. k ] do
+            C := [];
+            for l in [ 1 .. M[ i ] ] do
+                # get some preimage position under epsilon
+                preimagePosition := PreimagePositions( epsilon, [ i, l ] )[ 1 ];
+                
+                img := Component( tau, preimagePosition);
+                r := img[ 1 ];
+                g := Representative( img[ 2 ] );
+                j := img[ 3 ];
+                
+                h := Representative( Component( epsilon, preimagePosition)[ 2 ] );
+                
+                Add( C, [ r, g * Inverse( h ), j ] );
             od;
             Add( D, C );
         od;
@@ -1125,7 +1161,7 @@ InstallMethod( SkeletalGSets,
                         r := p[ 2 ];
                         solutions[ j ][ r ] := g * solutions[ j ][ r ]; 
                     od;
-                    return [ i, solutions, g ];
+                    return rec( subgroupPosition := i, solutions := solutions );
                 fi;
             od;
         od;
@@ -1174,10 +1210,12 @@ InstallMethod( SkeletalGSets,
                 
                 temp := CoequalizerOfAConnectedComponent( D, preimagePositions, imagePositions );
                 
-                subgroupPosition := temp[ 1 ];
-                solutions := temp[ 2 ];
+                subgroupPosition := temp.subgroupPosition;
+                solutions := temp.solutions;
                 
                 Cq[ subgroupPosition ] := Cq[ subgroupPosition ] + 1;
+                
+                # TODO
                 
                 for p in imagePositions do
                     imgs[ p[ 1 ] ][ p[ 2 ] ] := [ Cq[ subgroupPosition ], solutions[ p[ 1 ] ][ p[ 2 ] ] , subgroupPosition ]; 
@@ -1194,55 +1232,11 @@ InstallMethod( SkeletalGSets,
     ##
     AddUniversalMorphismFromCoequalizer( SkeletalGSets,
       function( D, tau )
-        local T, A, B, M, N, Cq, processedImagePositions, imgs, j, r, preimagePositions, imagePositions, iota, temp, subgroupPosition, solutions, g, firstImagePosition, img;
+        local epsilon;
         
-        T := Range( tau );
+        epsilon := ProjectionOntoCoequalizer( D );
         
-        A := Source( D[ 1 ] );
-        B := Range( D[ 1 ] );
-
-        M := AsList( A );
-        N := AsList( B );
-        
-        Cq := IntZeroVector( k );
-        
-        processedImagePositions := [];
-        
-        imgs := List( [ 1 .. k ], x -> [] );
-        
-        for j in [ 1 .. k ] do
-            for r in [ 1 .. N[ j ] ] do 
-                if [ j, r ] in processedImagePositions then
-                    continue;
-                fi;
-                
-                preimagePositions := Union( List( D, phi -> PreimagePositions( phi, [ j, r ] ) ) );
-                
-                if IsEmpty( preimagePositions ) then
-                    imagePositions := [ [ j, r ] ];
-                else
-                    iota := EmbeddingOfPositions( preimagePositions, A );
-                    imagePositions := Union( List( D, phi -> ImagePositions( PreCompose( iota, phi ) ) ) );
-                fi;
-                
-                temp := CoequalizerOfAConnectedComponent( D, preimagePositions, imagePositions );
-                
-                subgroupPosition := temp[ 1 ];
-                solutions := temp[ 2 ];
-                g := temp[ 3 ];
-                
-                Cq[ subgroupPosition ] := Cq[ subgroupPosition ] + 1;
-                
-                firstImagePosition := imagePositions[ 1 ];
-                img := AsList( tau )[ firstImagePosition[ 1 ] ][ firstImagePosition[ 2 ] ];
-                
-                Add( imgs[ subgroupPosition ], [ img[ 1 ], img[ 2 ] * Inverse( g ), img [ 3 ] ] );
-                
-                processedImagePositions := Concatenation( processedImagePositions, imagePositions );
-            od;
-        od;
-        
-        return MapOfGSets( GSet( group, Cq ), imgs, Range( tau ) );
+        return ColiftAlongEpimorphism( epsilon, tau );
         
     end );
     
