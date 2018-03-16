@@ -50,16 +50,20 @@ InstallMethod( MapOfGSets,
     
     k := Length( MatTom( TableOfMarks( group ) ) );
     
+    if ( not IsList( I ) ) or ( not ForAll( I, x -> IsList( x ) ) ) then
+        Error( "I has the wrong format\n" );
+    fi;
+    
     imgs := List( I, x -> List( x, function( img )
-        if Length( img ) <> 3 then
-            Error("images must be triples\n");
+        if ( not IsList( img ) ) or Length( img ) <> 3 then
+            Error( "images must be triples\n" );
         fi;
         
         g := img[ 2 ];
         if g in group then
             j := img[ 3 ];
             if not ( IsPosInt( j ) and j <= k ) then
-                Error("last entry of an image must be an integer j with 1 <= j <= k\n");
+                Error( "last entry of an image must be an integer j with 1 <= j <= k\n" );
             fi;
             U_j := RepresentativeTom( TableOfMarks( group ), j );
             img[ 2 ] := RightCoset( U_j, g );
@@ -358,12 +362,12 @@ InstallMethod( SkeletalGSets,
     end;
 
     ##
-    PreimagePositions := function( phi, targetPosition )
+    PreimagePositions := function( phi, targetPositions )
         local S, positions;
         
         S := Source( phi );
         
-        positions := Filtered( Positions( S ), p -> TargetPosition( Component( phi, p ) ) = targetPosition );
+        positions := Filtered( Positions( S ), p -> TargetPosition( Component( phi, p ) ) in targetPositions );
         
         return positions;
         
@@ -417,7 +421,7 @@ InstallMethod( SkeletalGSets,
                 j := img[ 3 ];
                 
                 # get the unique preimage position under iota
-                preimagePosition := PreimagePositions( iota, [ j, r ] )[ 1 ];
+                preimagePosition := PreimagePositions( iota, [ [ j, r ] ] )[ 1 ];
                 
                 t := preimagePosition[ 2 ];
                 h := Representative( Component( iota, preimagePosition )[ 2 ] );
@@ -448,7 +452,7 @@ InstallMethod( SkeletalGSets,
             C := [];
             for l in [ 1 .. M[ i ] ] do
                 # get some preimage position under epsilon
-                preimagePosition := PreimagePositions( epsilon, [ i, l ] )[ 1 ];
+                preimagePosition := PreimagePositions( epsilon, [ [ i, l ] ] )[ 1 ];
                 
                 img := Component( tau, preimagePosition);
                 r := img[ 1 ];
@@ -1179,7 +1183,7 @@ InstallMethod( SkeletalGSets,
     ##
     AddProjectionOntoCoequalizer( SkeletalGSets,
       function( D )
-        local A, B, M, N, Cq, processedImagePositions, imgs, j, r, preimagePositions, imagePositions, iota, temp, subgroupPosition, solutions, p;
+        local A, B, M, N, Cq, processedImagePositions, imgs, j, r, previousImagePositions, preimagePositions, imagePositions, iota, temp, subgroupPosition, solutions, p;
         
         A := Source( D[ 1 ] );
         B := Range( D[ 1 ] );
@@ -1199,23 +1203,23 @@ InstallMethod( SkeletalGSets,
                     continue;
                 fi;
                 
-                preimagePositions := Union( List( D, phi -> PreimagePositions( phi, [ j, r ] ) ) );
-                
-                if IsEmpty( preimagePositions ) then
-                    imagePositions := [ [ j, r ] ];
-                else
-                    iota := EmbeddingOfPositions( preimagePositions, A );
-                    imagePositions := Union( List( D, phi -> ImagePositions( PreCompose( iota, phi ) ) ) );
-                fi;
-                
+                previousImagePositions := [ ];
+                imagePositions := [ [ j, r ] ];
+                while previousImagePositions <> imagePositions do
+                    previousImagePositions := imagePositions;
+                    preimagePositions := Union( List( D, phi -> PreimagePositions( phi, imagePositions ) ) );
+                    if not IsEmpty( preimagePositions ) then
+                        iota := EmbeddingOfPositions( preimagePositions, A );
+                        imagePositions := Union( List( D, phi -> ImagePositions( PreCompose( iota, phi ) ) ) );
+                    fi;
+                od;
+
                 temp := CoequalizerOfAConnectedComponent( D, preimagePositions, imagePositions );
                 
                 subgroupPosition := temp.subgroupPosition;
                 solutions := temp.solutions;
                 
                 Cq[ subgroupPosition ] := Cq[ subgroupPosition ] + 1;
-                
-                # TODO
                 
                 for p in imagePositions do
                     imgs[ p[ 1 ] ][ p[ 2 ] ] := [ Cq[ subgroupPosition ], solutions[ p[ 1 ] ][ p[ 2 ] ] , subgroupPosition ]; 
