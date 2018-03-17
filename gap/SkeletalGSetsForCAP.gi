@@ -192,6 +192,7 @@ InstallMethod( SkeletalGSets,
         
     end );
 
+    # returns the positions of an object 'Omega'
     Positions := function( Omega )
         local M, positions, i, l;
         
@@ -340,10 +341,12 @@ InstallMethod( SkeletalGSets,
         
     end );
     
+    # returns the component of a morphism 'phi' at position 'position'
     Component := function( phi, position )
         return AsList( phi )[ position[ 1 ] ][ position[ 2 ] ];
     end;
     
+    # returns the target position of a component 'component' of a morphism
     TargetPosition := function( component )
         return [ component[ 3 ], component[ 1 ] ];
     end;
@@ -375,12 +378,11 @@ InstallMethod( SkeletalGSets,
     
     ##
     EmbeddingOfPositions := function( positions, T )
-        local positionsBySubgroupPosition, S, M, D, i, C, l;
+        local L, S, M, D, i, C, l;
         
-        # group positions by subgroup position, i.e. first entry
-        positionsBySubgroupPosition := List( [ 1 .. k ], i -> Filtered( positions, p -> p[ 1 ] = i ) );
+        L := List( [ 1 .. k ], i -> Filtered( positions, p -> p[ 1 ] = i ) );
         
-        S := GSet( group, List( positionsBySubgroupPosition, p -> Length( p ) ) );
+        S := GSet( group, List( L, p -> Length( p ) ) );
         
         M := AsList( S );
         
@@ -389,7 +391,7 @@ InstallMethod( SkeletalGSets,
         for i in [ 1 .. k ] do 
             C := [];
             for l in [ 1 .. M[ i ] ] do
-                Add( C, [ positionsBySubgroupPosition[ i ][ l ][ 2 ], Identity( group ), i ] );
+                Add( C, [ L[ i ][ l ][ 2 ], Identity( group ), i ] );
             od;
             Add( D, C );
         od;
@@ -402,10 +404,10 @@ InstallMethod( SkeletalGSets,
     
     ##
     AddLiftAlongMonomorphism( SkeletalGSets,
-      function( iota, tau )
+      function( iota, phi )
         local S, T, M, D, i, C, l, img, r, g, j, preimagePosition, t, h, s;
       
-        S := Source( tau );
+        S := Source( phi );
         T := Source( iota );
         
         M := AsList( S );
@@ -415,7 +417,7 @@ InstallMethod( SkeletalGSets,
         for i in [ 1 .. k ] do
             C := [];
             for l in [ 1 .. M[ i ] ] do
-                img := Component( tau, [ i , l ] );
+                img := Component( phi, [ i , l ] );
                 r := img[ 1 ];
                 g := Representative( img[ 2 ] );
                 j := img[ 3 ];
@@ -438,11 +440,11 @@ InstallMethod( SkeletalGSets,
     
     ##
     AddColiftAlongEpimorphism( SkeletalGSets,
-      function( epsilon, tau )
+      function( pi, phi )
         local S, T, M, D, i, C, l, img, r, g, j, preimagePosition, t, h, s;
       
-        S := Range( epsilon );
-        T := Range( tau );
+        S := Range( pi );
+        T := Range( phi );
         
         M := AsList( S );
         
@@ -451,15 +453,15 @@ InstallMethod( SkeletalGSets,
         for i in [ 1 .. k ] do
             C := [];
             for l in [ 1 .. M[ i ] ] do
-                # get some preimage position under epsilon
-                preimagePosition := PreimagePositions( epsilon, [ [ i, l ] ] )[ 1 ];
+                # get some preimage position under pi
+                preimagePosition := PreimagePositions( pi, [ [ i, l ] ] )[ 1 ];
                 
-                img := Component( tau, preimagePosition);
+                h := Representative( Component( pi, preimagePosition )[ 2 ] );
+
+                img := Component( phi, preimagePosition );
                 r := img[ 1 ];
                 g := Representative( img[ 2 ] );
                 j := img[ 3 ];
-                
-                h := Representative( Component( epsilon, preimagePosition)[ 2 ] );
                 
                 Add( C, [ r, g * Inverse( h ), j ] );
             od;
@@ -1236,11 +1238,11 @@ InstallMethod( SkeletalGSets,
     ##
     AddUniversalMorphismFromCoequalizer( SkeletalGSets,
       function( D, tau )
-        local epsilon;
+        local pi;
         
-        epsilon := ProjectionOntoCoequalizer( D );
+        pi := ProjectionOntoCoequalizer( D );
         
-        return ColiftAlongEpimorphism( epsilon, tau );
+        return ColiftAlongEpimorphism( pi, tau );
         
     end );
     
