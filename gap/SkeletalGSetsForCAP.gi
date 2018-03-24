@@ -104,7 +104,7 @@ InstallMethod( SkeletalGSets,
         OffsetInCartesianProduct,
         UniversalMorphismIntoBinaryDirectProductWithGivenDirectProduct,
         ExplicitCoequalizer,
-        CoequalizerOfAConnectedComponent,
+        ProjectionOntoCoequalizerOfAConnectedComponent,
         Positions,
         Component,
         TargetPosition,
@@ -1067,7 +1067,7 @@ InstallMethod( SkeletalGSets,
     end;
 
     ##
-    CoequalizerOfAConnectedComponent := function( D )
+    ProjectionOntoCoequalizerOfAConnectedComponent := function( D )
 	  local S, T, M, N, equations, a, b, i, l, phi_a, phi_b, img_a, img_b, e, solutions, j_a, r_a, g_a, j_b, r_b, g_b, X, j, r, U_j, h, h_a, h_b, V, U_i, g, Cq, imgs, pi;
         
         S := Source( D[ 1 ] );
@@ -1147,12 +1147,6 @@ InstallMethod( SkeletalGSets,
             U_i := RepresentativeOfSubgroupsUpToConjugation( i );
             for g in group do
                 if ConjugateSubgroup( V, Inverse( g ) ) = U_i then
-					for j in [ 1 .. k ] do
-						for r in [ 1 .. N[ j ] ] do
-							solutions[ j ][ r ] := g * solutions[ j ][ r ]; 
-						od;
-                    od;
-					
 					Cq := IntZeroVector( k );
 					Cq[ i ] := 1;
 					
@@ -1160,7 +1154,7 @@ InstallMethod( SkeletalGSets,
 					for j in [ 1 .. k ] do
 					  	imgs[ j ] := [];
 						for r in [ 1 .. N[ j ] ] do
-							imgs[ j ][ r ] := [ 1, solutions[ j ][ r ], i ]; 
+							imgs[ j ][ r ] := [ 1, g * solutions[ j ][ r ], i ]; 
 						od;
 					od;
 					
@@ -1184,7 +1178,7 @@ InstallMethod( SkeletalGSets,
     ##
     AddProjectionOntoCoequalizer( SkeletalGSets,
       function( D )
-        local S, T, M, N, Cq, rangePositions, imgs, j, r, previousImagePositions, preimagePositions, imagePositions, iota, preimageEmbedding, imageEmbedding, projection, imageEmbeddings, projections, tau, iso, pi;
+        local S, T, M, N, Cq, rangePositions, imgs, j, r, previousImagePositions, preimagePositions, imagePositions, iota, preimageEmbedding, imageEmbedding, projection, imageEmbeddings, projections, tau, alpha, pi;
         
         S := Source( D[ 1 ] );
         T := Range( D[ 1 ] );
@@ -1210,7 +1204,7 @@ InstallMethod( SkeletalGSets,
 
 			preimageEmbedding := EmbeddingOfPositions( preimagePositions, S );
 			imageEmbedding := EmbeddingOfPositions( imagePositions, T );
-			projection := CoequalizerOfAConnectedComponent( List( D, phi -> LiftAlongMonomorphism( imageEmbedding, PreCompose( preimageEmbedding, phi ) ) ) );
+			projection := ProjectionOntoCoequalizerOfAConnectedComponent( List( D, phi -> LiftAlongMonomorphism( imageEmbedding, PreCompose( preimageEmbedding, phi ) ) ) );
 			
 			Add( imageEmbeddings, imageEmbedding );
 			Add( projections, projection );
@@ -1221,8 +1215,8 @@ InstallMethod( SkeletalGSets,
 		od;
 
 		tau := CoproductFunctorial( projections );
-		iso := UniversalMorphismFromCoproduct( imageEmbeddings );
-		pi := PreCompose( Inverse( iso ), tau );
+		alpha := UniversalMorphismFromCoproduct( imageEmbeddings );
+		pi := PreCompose( Inverse( alpha ), tau );
         
         return pi;
         
