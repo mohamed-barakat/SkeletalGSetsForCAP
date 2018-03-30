@@ -380,6 +380,9 @@ InstallMethod( SkeletalGSets,
     EmbeddingOfPositions := function( positions, T )
         local L, S, M, D, i, C, l;
         
+        # impose lexicographical order
+        positions = Set( positions );
+        
         L := List( [ 1 .. k ], i -> Filtered( positions, p -> p[ 1 ] = i ) );
         
         S := GSet( group, List( L, p -> Length( p ) ) );
