@@ -24,7 +24,7 @@ Eq := Equalizer( D );
 AsList( Eq );
 #! [ 0, 0, 2, 0 ]
 psi := EmbeddingOfEqualizer( D );
-#! <A morphism in Skeletal Category of G-Sets>
+#! <A monomorphism in Skeletal Category of G-Sets>
 IsWellDefined( psi );
 #! true
 Display( psi );
@@ -65,7 +65,7 @@ Eq := Equalizer( D );
 AsList( Eq );
 #! [ 2 ]
 psi := EmbeddingOfEqualizer( D );
-#! <A morphism in Skeletal Category of G-Sets>
+#! <A monomorphism in Skeletal Category of G-Sets>
 Display( psi );
 #! [ [ [ 1, (), 1 ], [ 5, (), 1 ] ] ]
 PreCompose( psi, f1 ) = PreCompose( psi, f2 );
@@ -79,7 +79,7 @@ Eq := Equalizer( D );
 AsList( Eq );
 #! [ 3 ]
 psi := EmbeddingOfEqualizer( D );
-#! <A morphism in Skeletal Category of G-Sets>
+#! <A monomorphism in Skeletal Category of G-Sets>
 Display( psi );
 #! [ [ [ 1, (), 1 ], [ 4, (), 1 ], [ 5, (), 1 ] ] ]
 
