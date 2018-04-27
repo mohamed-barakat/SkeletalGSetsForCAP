@@ -401,7 +401,13 @@ InstallMethod( SkeletalGSets,
             Add( D, C );
         od;
 
-        return MapOfGSets( S, D, T );
+        iota := MapOfGSets( S, D, T );
+        
+        Assert( 3, IsMonomorphism( iota ) );
+        
+        SetIsMonomorphism( iota, true );
+        
+        return iota;
         
     end;
     
